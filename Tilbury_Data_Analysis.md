@@ -62,7 +62,7 @@ willow data plots
 ``` r
 #Living Tissue vs. Cluster#
 
-willow_plot <- willow_data %>%
+willow_growth_cluster <- willow_data %>%
   ggplot(aes(x=Cluster.., y=Shoot.Growth.Average.Length..cm.)) +
   geom_point(aes(color = factor(Date))) +
   geom_smooth(aes(group = Date, color = factor(Date)), se = FALSE) +
@@ -84,7 +84,7 @@ willow_plot <- willow_data %>%
     ## generated.
 
 ``` r
-willow_plot
+willow_growth_cluster
 ```
 
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
@@ -96,3 +96,15 @@ willow_plot
     ## (`geom_point()`).
 
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+``` r
+ggsave("Willow stake growth vs cluster #.jpg", plot = willow_growth_cluster, 
+       width = 10, height = 6.5)
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning: Removed 48 rows containing non-finite outside the scale range
+    ## (`stat_smooth()`).
+    ## Removed 48 rows containing missing values or values outside the scale range
+    ## (`geom_point()`).
