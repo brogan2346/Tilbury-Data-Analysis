@@ -155,22 +155,150 @@ TEV_ave <- TEV_data %>%
   group_by(Date) %>%
   summarise(ave_diff = mean(Difference, na.rm = TRUE),
             sd_diff = sd(Difference, na.rm = TRUE))
+
+# comparison analysis
+
+TEV_sub <- TEV_data %>%
+  filter(Date == as.Date("2025-07-14"))
+
+#T-Test paired
+t.test(TEV_sub$Inside.Average.Plant.Height..cm., 
+       TEV_sub$Outside.Average.Plant.Height..cm., paired = TRUE)
 ```
+
+    ## 
+    ##  Paired t-test
+    ## 
+    ## data:  TEV_sub$Inside.Average.Plant.Height..cm. and TEV_sub$Outside.Average.Plant.Height..cm.
+    ## t = 2.6186, df = 2, p-value = 0.1201
+    ## alternative hypothesis: true mean difference is not equal to 0
+    ## 95 percent confidence interval:
+    ##  -2.572411 10.572411
+    ## sample estimates:
+    ## mean difference 
+    ##               4
+
+``` r
+#Wilcoxon test
+wilcox.test(TEV_sub$Inside.Average.Plant.Height..cm., 
+       TEV_sub$Outside.Average.Plant.Height..cm., paired = TRUE)
+```
+
+    ## 
+    ##  Wilcoxon signed rank exact test
+    ## 
+    ## data:  TEV_sub$Inside.Average.Plant.Height..cm. and TEV_sub$Outside.Average.Plant.Height..cm.
+    ## V = 6, p-value = 0.25
+    ## alternative hypothesis: true location shift is not equal to 0
 
 TEV site plot
 
 ``` r
 TEV_plot <- TEV_ave %>%
   ggplot(aes(x = Date, y = ave_diff)) +
-  geom_point() +
+  geom_point(size = 2) +
   geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
   ylim(-10,10) +
   geom_errorbar(aes(ymin = ave_diff - sd_diff, ymax = ave_diff + sd_diff),
                 width = 0.2) +
-  labs(y = "Difference in height (cm)",
-       title = "Spikerush (Eleocharis palustris) Height Difference over Time ") +
-  theme_classic()
+  labs(y = "Spikerush Height Difference (cm)",
+       title = expression("Common Spikerush (" 
+                          * italic("Eleocharis palustris") *
+                          ") Growth Difference over Time ")) +
+  annotate("text", x = as.Date("2025-06-04"), y = 0.75, 
+           label = "Increased growth inside exclosure zone ⮝", size = 3, color ="blue") +
+  annotate("text", x = as.Date("2025-06-04"), y = -0.5, 
+           label = "Increased growth outside exclosure zone ⮟", size = 3, color = "red") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
 TEV_plot
 ```
 
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+``` r
+ggsave("TEV_sites_growth_plot.jpg", plot = TEV_plot, width = 7, height = 4)
+```
+
+Nursery Plug data manipulation
+
+Nursery Plug data visualization
+
+``` r
+totalnum_high_plot <- nursery_data %>%
+  filter(Density == "High") %>%
+  ggplot(aes(x = Date, y = X..of.Plugs, color = Exclosure)) +
+  geom_point(position = position_jitter(width = 1, height = 0))+
+  geom_smooth(se = FALSE) +
+  ylim(0, 25)
+totalnum_high_plot
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 7.1578e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 689.59
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 7.1578e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 689.59
+
+    ## Warning: Removed 1 row containing missing values or values outside the scale range
+    ## (`geom_smooth()`).
+
+![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+totalnum_low_plot <- nursery_data %>%
+  filter(Density == "Low") %>%
+  ggplot(aes(x = Date, y = X..of.Plugs, color = Exclosure)) +
+  geom_point(position = position_jitter(width = 1, height = 0))+
+  geom_smooth(se = FALSE) +
+  ylim(0, 25)
+totalnum_low_plot
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 8.7664e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 689.59
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 8.7664e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 689.59
+
+![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
