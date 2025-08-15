@@ -3,6 +3,10 @@ Tilbury_Data_Analysis
 Brogan Neufeld
 2025-07-15
 
+|                           |
+|:--------------------------|
+| INTRO + DATA MINIPULATION |
+
 Installing Relavent Packages and Importing Relavent Data
 
 ``` r
@@ -68,6 +72,10 @@ bird_data <- bird_RAW %>%
   mutate(Date = as.Date(Date, format = "%m/%d/%Y"))
 ```
 
+|                   |
+|:------------------|
+| WILLOW STAKE DATA |
+
 Creating a Palette of colours to be used for figures that are coloured
 according to date
 
@@ -92,9 +100,17 @@ Willow_Elevation <- Willow_Elevation %>%
   rename("Cluster.." = Name)
 willow_data <- left_join(willow_data, Willow_Elevation[, c("Cluster..",
                         "Elevation")], by = "Cluster..")
+
+Willow_Elevation <- read.csv("Raw_Data\\Willow_Elevations.csv")
+Willow_Elevation$Name <- sub(".*Willow_stake", "", Willow_Elevation$Name)
+Willow_Elevation$Name <- as.numeric(Willow_Elevation$Name)
+Willow_Elevation <- Willow_Elevation %>% 
+  rename("cluster_." = Name)
+diameter_data <- left_join(diameter_data, Willow_Elevation[, c("cluster_.",
+                        "Elevation")], by = "cluster_.")
 ```
 
-Living Tissue vs. Cluster#
+Growth vs elevation and date plot
 
 ``` r
 willow_growth_cluster <- willow_data %>%
@@ -103,17 +119,20 @@ willow_growth_cluster <- willow_data %>%
   geom_smooth(aes(group = Date, color = factor(Date)), se = FALSE) +
   scale_color_manual(values = date_color_palette,
                      breaks = setdiff(names(date_color_palette),
-                                  as.character(c("4/17/2025", "4/4/2025")))) +
+                                  as.character(c("2025-04-17", "2025-04-04")))) +
   labs(color = "Date", x = "Distance From Shore (m)", 
        y = "Max Shoot Growth (cm)",
        title = "Willow Stake Growth vs. Distance from Shore") +
+  theme_classic() +
   theme(plot.title = element_text(hjust = 0.5), 
         legend.position = c(0.89, 0.75)) +
-  geom_point(aes(y = Elevation * 100), color = "red") +
-  geom_line(aes(y = Elevation *100), color = "red", se = FALSE) +
+  geom_point(aes(y = Elevation * 100),color = "red") +
+  geom_line(aes(y = Elevation * 100),color = "red")+
   scale_y_continuous(
-    name = "Shoot Growth (cm)",
-    sec.axis = sec_axis(~ . / 100, name = "Elevation (m)"))
+    name = "Shoot Height (cm)",
+    sec.axis = sec_axis(~ . / 100, name = "Elevation (m)")) +
+    annotate("point", x = 2, y = 100, color = "red", size = 2) +
+    annotate("text", x = 2.5, y = 100, label = "Elevation", hjust = 0, size = 4)
 ```
 
     ## Warning: A numeric `legend.position` argument in `theme()` was deprecated in ggplot2
@@ -122,9 +141,6 @@ willow_growth_cluster <- willow_data %>%
     ## This warning is displayed once every 8 hours.
     ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
     ## generated.
-
-    ## Warning in geom_line(aes(y = Elevation * 100), color = "red", se = FALSE):
-    ## Ignoring unknown parameters: `se`
 
 ``` r
 willow_growth_cluster
@@ -141,9 +157,15 @@ willow_growth_cluster
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ``` r
-#ggsave("Willow stake growth vs cluster #.jpg", plot = willow_growth_cluster, 
-       #width = 10, height = 6.5)
+ggsave("Figures\\Willow stake growth vs cluster #.jpg", plot = willow_growth_cluster, width = 8, height = 5)
 ```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning: Removed 48 rows containing non-finite outside the scale range
+    ## (`stat_smooth()`).
+    ## Removed 48 rows containing missing values or values outside the scale range
+    ## (`geom_point()`).
 
 Mortality plots
 
@@ -159,46 +181,70 @@ mort_distance <- willow_ave %>%
   geom_point() +
   labs(y = "Total Survivorship (%)",
        title = "Stake Survivorship over Time") +
-  geom_point(aes(y = ave_bud/3*100), color = "red") +
-  ylim(0, 100)
+  ylim(50, 100) +
+  theme_classic()
 mort_distance
 ```
 
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
-diameter plots
+binary mortality plots
 
 ``` r
-growth_diameter_plot <- diameter_data %>%
-  ggplot(aes(x = diameter_cm, y = growth_cm)) +
-  geom_point() +
-  stat_smooth(method = "lm", se = FALSE)
-growth_diameter_plot
+diameter_data <- diameter_data %>%
+  mutate(alive_binary = ifelse(alive. == "Y", 1, 0))
+
+
+mort_elevation <- diameter_data %>%
+  ggplot(aes(x = Elevation, y = alive_binary)) +
+  geom_point()+
+  stat_smooth(method = "glm", se = FALSE, color = "red") +
+  theme_classic() +
+  scale_y_continuous(
+    labels = function(x) x * 100) +
+  labs(x = "Elevation (m)",
+       y = "Willow Stake Survivorship (%)",
+       title = "Willow Stake Survivorship vs. Elevation") +
+  theme(plot.title = element_text(hjust = 0.5))
+mort_elevation
 ```
 
     ## `geom_smooth()` using formula = 'y ~ x'
 
-    ## Warning: Removed 25 rows containing non-finite outside the scale range
-    ## (`stat_smooth()`).
-
-    ## Warning: Removed 25 rows containing missing values or values outside the scale range
-    ## (`geom_point()`).
-
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ``` r
-growth_cluster_plot <- diameter_data %>%
-  ggplot(aes(x = cluster_., y = growth_cm, size = diameter_cm)) +
-  geom_point()
-growth_cluster_plot
+mort_diameter <- diameter_data %>%
+  ggplot(aes(x = diameter_cm, y = alive_binary)) +
+  geom_point()+
+  stat_smooth(method = "glm", se = FALSE, color = "red") +
+  theme_classic() +
+  scale_y_continuous(
+    labels = function(x) x * 100) +
+  labs(x = "Willow Stake Diameter (cm)",
+       y = "Willow Stake Survivorship (%)",
+       title = "Willow Stake Survivorship vs. Stem Width") +
+  theme(plot.title = element_text(hjust = 0.5))
+mort_diameter
 ```
 
-    ## Warning: Removed 25 rows containing missing values or values outside the scale range
-    ## (`geom_point()`).
+    ## `geom_smooth()` using formula = 'y ~ x'
 
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
 
-diameter fun?
+``` r
+ggsave("Figures\\Stake survivorship vs elevation.jpg", plot = mort_elevation, width = 8, height = 5)
+```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+``` r
+ggsave("Figures\\Stake survivorship vs diameter.jpg", plot = mort_diameter, width = 8, height = 5)
+```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+normalized diameter plot ????
 
 ``` r
 diameter_number_data <- diameter_data %>%
@@ -224,6 +270,10 @@ normalized_plot
 ```
 
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+|           |
+|:----------|
+| TEV SITES |
 
 TEV site analysis
 
@@ -284,9 +334,9 @@ TEV_plot <- TEV_ave %>%
        title = expression("Common Spikerush (" 
                           * italic("Eleocharis palustris") *
                           ") Growth Difference over Time ")) +
-  annotate("text", x = as.Date("2025-06-04"), y = 0.75, 
+  annotate("text", x = as.Date("2025-06-10"), y = 0.75, 
            label = "Increased growth inside exclosure zone ⮝", size = 3, color ="blue") +
-  annotate("text", x = as.Date("2025-06-04"), y = -0.5, 
+  annotate("text", x = as.Date("2025-06-10"), y = -0.5, 
            label = "Increased growth outside exclosure zone ⮟", size = 3, color = "red") +
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -296,8 +346,12 @@ TEV_plot
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ``` r
-#ggsave("TEV_sites_growth_plot.jpg", plot = TEV_plot, width = 7, height = 4)
+ggsave("Figures\\TEV_sites_growth_plot.jpg", plot = TEV_plot, width = 7, height = 4)
 ```
+
+|                   |
+|:------------------|
+| NURSERY PLUG DATA |
 
 Nursery Plug data manipulation
 
@@ -323,18 +377,50 @@ nursery_ave <- nursery_ave %>%
     ## `summarise()` has grouped output by 'Date'. You can override using the
     ## `.groups` argument.
 
+``` r
+#% survivorship column to be added
+
+nursery_data <- nursery_data %>%
+  mutate(survivorship = case_when(
+    Plot.ID == "TE1" ~ X..of.Plugs /25*100,
+    Plot.ID == "TE2" ~ X..of.Plugs /9*100,
+    Plot.ID == "TE3" ~ X..of.Plugs /25*100,
+    Plot.ID == "TE4" ~ X..of.Plugs /9*100,
+    Plot.ID == "TE5" ~ X..of.Plugs /5*100,
+    TRUE ~ NA_real_))
+
+#interaction column
+
+nursery_data <- nursery_data %>%
+  mutate(TreatmentGroup = factor(interaction(Exclosure, Density),
+                                 levels = c("Yes.High", "Yes.Low", "No.High", "No.Low")))
+```
+
 Nursery Plug data visualization
 
 ``` r
-totalnum_high_plot <- nursery_data %>%
-  filter(Density == "High") %>%
-  ggplot(aes(x = Date, y = X..of.Plugs/25*100, color = Exclosure)) +
-  geom_point(position = position_jitter(width = 1, height = 0))+
+survivor_plot <- nursery_data %>%
+  ggplot(aes(x = Date, y = survivorship, color = TreatmentGroup)) +
+  geom_point() +
+  geom_jitter(width = 1, height = 2) +
+  theme_classic() +
   geom_smooth(se = FALSE) +
-  ylim(0, 100) +
-  labs( y = "%plugs remaining (High Density Plots)",
-        title = "High Density Plug Survivorship Over Time")
-totalnum_high_plot
+  scale_color_manual(values = c(
+      "Yes.High" = "red",  
+      "Yes.Low" = "pink",
+      "No.High" = "blue",
+      "No.Low" = "lightblue"),
+    labels = c(
+      "Yes.High" = "Exclosed + High Density",
+      "Yes.Low" = "Exclosed + Low Density",
+      "No.High" = "Unprotected + High Density",
+      "No.Low" = "Unprotected + Low Density")) +
+  labs(y = "Nursery Plant SUrvivorship (%)",
+       color = "Treatment",
+       title= "Nursery Plant Survivorship Over Time") +
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position = c(0.155, 0.2))
+survivor_plot
 ```
 
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
@@ -355,57 +441,34 @@ totalnum_high_plot
     ## : neighborhood radius 26
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 3.4928e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
     ## : reciprocal condition number 4.9396e-17
 
-    ## Warning: Removed 1 row containing missing values or values outside the scale range
-    ## (`geom_smooth()`).
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 3.4928e-17
 
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
-
-``` r
-totalnum_low_plot <- nursery_data %>%
-  filter(Density == "Low") %>%
-  filter(Plot.ID != "TE5") %>%
-  ggplot(aes(x = Date, y = X..of.Plugs/9*100, color = Exclosure)) +
-  geom_point(position = position_jitter(width = 1, height = 0))+
-  geom_smooth(se = FALSE) +
-  ylim(0, 100) +
-  labs( y = "%plugs remaining (Low Density Plots)",
-        title = "Low Density Plug Survivorship Over Time")
-totalnum_low_plot
-```
-
-    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : pseudoinverse used at 20257
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : neighborhood radius 26
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : reciprocal condition number 4.9396e-17
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : pseudoinverse used at 20257
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : neighborhood radius 26
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : reciprocal condition number 4.9396e-17
-
-    ## Warning: Removed 1 row containing missing values or values outside the scale range
-    ## (`geom_smooth()`).
-
-![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
 
 ``` r
 height_ave_plot <- nursery_ave %>%
   ggplot(aes(x = Date, y = yes_val)) +
   geom_point(aes(color = "yes_val")) +
   geom_point(aes(y = no_val, color = "no_val")) +
-  ylim(0,25) +
+  coord_cartesian(ylim = c(0, 25)) +
   geom_smooth(aes(y = yes_val), color = "red", se = FALSE) +
   geom_smooth(aes(y = no_val), color = "blue", se = FALSE) + 
   scale_color_manual(values = c("yes_val" = "red", "no_val" = "blue"),
@@ -413,7 +476,9 @@ height_ave_plot <- nursery_ave %>%
   labs(color = "Treatment", y = "Average Plant Height (cm)",
        title = "Nursery Plant Growth over Time ") +
   guides(color = guide_legend(reverse = TRUE)) +
-  theme_classic()
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position = c(0.89, 0.85))
 height_ave_plot
 ```
 
@@ -439,7 +504,79 @@ height_ave_plot
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
     ## : reciprocal condition number 5.5227e-17
 
-![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-12-3.png)<!-- -->
+![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
+
+``` r
+ggsave("Figures\\Nursery_Height_plot.jpg", plot = height_ave_plot, width = 8, height = 5)
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 5.5227e-17
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 5.5227e-17
+
+``` r
+ggsave("Figures\\Nursery_Survivorship_plot.jpg", plot = survivor_plot, width = 8, height = 5)
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 4.9396e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 3.4928e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 4.9396e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 3.4928e-17
+
+|                 |
+|:----------------|
+| DONOR CORE DATA |
 
 Donor Plug data manipulation
 
@@ -450,9 +587,7 @@ donor_ave <- donor_data %>%
   mutate(Max.SCHOTAB.Height..cm. = ifelse
          (Max.SCHOTAB.Height..cm. == 0, NA, Max.SCHOTAB.Height..cm.)) %>%
   mutate(Max.ELEOPAL.Height..cm. = ifelse
-         (Max.ELEOPAL.Height..cm. == 0, NA, Max.ELEOPAL.Height..cm.))
-
-donor_ave <- donor_data %>%
+         (Max.ELEOPAL.Height..cm. == 0, NA, Max.ELEOPAL.Height..cm.)) %>%
   group_by(Date, Exclosure) %>%
   summarise(SCHOTAB_ave = mean(Max.SCHOTAB.Height..cm., na.rm = TRUE),
             ELEOPAL_ave = mean(Max.ELEOPAL.Height..cm., na.rm = TRUE),
@@ -467,20 +602,83 @@ donor_ave <- donor_ave %>%
   ungroup() %>% 
   mutate(SCHOTAB_mort = c(5,5,4,5,4,4,4,4,0,0)/5*100,
          ELEOPAL_mort = c(10,10,8,10,6,10,6,10,6,8)/10*100,
-         CARELYN_mort = c(5,5,2,5,3,4,3,5,2,5)/5*100)
+         CARELYN_mort = c(5,5,2,5,3,4,3,5,2,5)/5*100) %>%
+  pivot_longer(
+    cols = c(SCHOTAB_mort, ELEOPAL_mort, CARELYN_mort),
+    names_to = "Species",
+    values_to = "Survivorship")
+
+donor_long <- donor_data %>%
+  pivot_longer(
+    cols = c(Max.SCHOTAB.Height..cm., Max.CARELYN.Height..cm., Max.ELEOPAL.Height..cm.),
+    names_to = "Species",
+    values_to = "Height_cm")
 ```
 
 Donor Plug data visualization
 
 ``` r
-SCHOTAB_height_plot <- donor_data %>%
-  ggplot(aes(x = Date, y = Max.SCHOTAB.Height..cm.)) +
-  geom_point(aes(color = Exclosure)) +
-  geom_smooth(aes(color = Exclosure), se = FALSE)
-SCHOTAB_height_plot
+donor_height_plot <- donor_long %>%
+  mutate(Species = case_when(
+           grepl("CARELYN", Species) ~ "Lyngbyei Sedge",
+           grepl("ELEOPAL", Species) ~ "Common Spikerush",
+           grepl("SCHOTAB", Species) ~ "Soft-Stem Bull Rush")) %>%
+  
+  
+  ggplot(aes(x = Date, y = Height_cm, color = Exclosure)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  facet_wrap(~ Species, ncol = 3) +
+  scale_color_manual(
+    name = "Treatment Group",
+    values = c("Yes" = "black", "No" = "darkgrey"),
+    labels = c("Yes" = "Exclosed", "No" = "Unprotected")) +
+  theme_classic() +
+  labs(y = "Max Plant Height (cm)",
+       title = "Donor Core Plant Growth by Species") +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "bottom") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b")
+donor_height_plot
 ```
 
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 5.5227e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 5.5227e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 5.5227e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 5.5227e-17
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
     ## : pseudoinverse used at 20257
@@ -503,41 +701,126 @@ SCHOTAB_height_plot
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
-ELEOPAL_height_plot <- donor_data %>%
-  ggplot(aes(x = Date, y = Max.ELEOPAL.Height..cm.)) +
-  geom_point(aes(color = Exclosure)) +
-  geom_smooth(aes(color = Exclosure), se = FALSE)
-ELEOPAL_height_plot
+donor_mort_plot <- donor_ave %>%
+  mutate(Species = case_when(
+           grepl("CARELYN", Species) ~ "Lyngbyei Sedge",
+           grepl("ELEOPAL", Species) ~ "Common Spikerush",
+           grepl("SCHOTAB", Species) ~ "Soft-Stem Bull Rush")) %>%
+  
+  
+  ggplot(aes(x = Date, y = Survivorship, color = Exclosure)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  facet_wrap(~ Species, ncol = 3) +
+  scale_color_manual(
+    name = "Treatment Group",
+    values = c("Yes" = "black", "No" = "darkgrey"),
+    labels = c("Yes" = "Exclosed", "No" = "Unprotected")) +
+  theme_classic() +
+  labs(y = "Plant Survivorship (%)",
+       title = "Donor Core Survivorship by Species") +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "bottom") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b")
+donor_mort_plot
 ```
 
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : pseudoinverse used at 20257
+    ## : span too small.  fewer data values than degrees of freedom.
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : neighborhood radius 26
+    ## : pseudoinverse used at 20231
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : reciprocal condition number 5.5227e-17
+    ## : neighborhood radius 39.4
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : pseudoinverse used at 20257
+    ## : reciprocal condition number 0
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : neighborhood radius 26
+    ## : There are other near singularities as well. 1714
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : reciprocal condition number 5.5227e-17
+    ## : span too small.  fewer data values than degrees of freedom.
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.4
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 0
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 1714
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : span too small.  fewer data values than degrees of freedom.
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.4
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 0
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 1714
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : span too small.  fewer data values than degrees of freedom.
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.4
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 0
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 1714
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : span too small.  fewer data values than degrees of freedom.
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.4
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 0
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 1714
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : span too small.  fewer data values than degrees of freedom.
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.4
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 0
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 1714
 
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
 
 ``` r
-CARELYN_height_plot <- donor_data %>%
-  ggplot(aes(x = Date, y = Max.CARELYN.Height..cm.)) +
-  geom_point(aes(color = Exclosure)) +
-  geom_smooth(aes(color = Exclosure), se = FALSE)
-CARELYN_height_plot
+ggsave("Figures\\Donor_Growth_plot.jpg", plot = donor_height_plot, width = 8, height = 5)
 ```
 
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
@@ -560,19 +843,23 @@ CARELYN_height_plot
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
     ## : reciprocal condition number 5.5227e-17
 
-![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-14-3.png)<!-- -->
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
 
-``` r
-total_mort_plot <- donor_data %>%
-  ggplot(aes(x = Date, y = X..of.Plugs/4*100, color = Exclosure)) +
-  geom_point() +
-  geom_smooth(aes(color = Exclosure), se = FALSE) +
-  geom_jitter(width = 2, height = 2) +
-  ylim(0,100)
-total_mort_plot
-```
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
 
-    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 5.5227e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 5.5227e-17
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
     ## : pseudoinverse used at 20257
@@ -592,21 +879,8 @@ total_mort_plot
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
     ## : reciprocal condition number 5.5227e-17
 
-    ## Warning: Removed 25 rows containing missing values or values outside the scale range
-    ## (`geom_smooth()`).
-
-    ## Warning: Removed 11 rows containing missing values or values outside the scale range
-    ## (`geom_point()`).
-
-![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-14-4.png)<!-- -->
-
 ``` r
-CARELYN_mort <- donor_ave %>%
-  ggplot(aes(x = Date, y = CARELYN_mort)) +
-  geom_point(aes(color = Exclosure))+
-  geom_smooth(aes(color = Exclosure), se = FALSE)+
-  ylim(0,110)
-CARELYN_mort
+ggsave("Figures\\Donor_mort_plot.jpg", plot = donor_mort_plot, width = 8, height = 5)
 ```
 
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
@@ -641,18 +915,35 @@ CARELYN_mort
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
     ## : There are other near singularities as well. 1714
 
-![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-14-5.png)<!-- -->
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : span too small.  fewer data values than degrees of freedom.
 
-``` r
-ELEOPAL_mort <- donor_ave %>%
-  ggplot(aes(x = Date, y = ELEOPAL_mort)) +
-  geom_point(aes(color = Exclosure))+
-  geom_smooth(aes(color = Exclosure), se = FALSE)+
-  ylim(0,100)
-ELEOPAL_mort
-```
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
 
-    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.4
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 0
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 1714
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : span too small.  fewer data values than degrees of freedom.
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20231
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 39.4
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 0
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 1714
 
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
     ## : span too small.  fewer data values than degrees of freedom.
@@ -684,56 +975,9 @@ ELEOPAL_mort
     ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
     ## : There are other near singularities as well. 1714
 
-    ## Warning: Removed 9 rows containing missing values or values outside the scale range
-    ## (`geom_smooth()`).
-
-![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-14-6.png)<!-- -->
-
-``` r
-SCHOTAB_mort <- donor_ave %>%
-  ggplot(aes(x = Date, y = SCHOTAB_mort)) +
-  geom_point(aes(color = Exclosure))+
-  geom_smooth(aes(color = Exclosure), se = FALSE)+
-  ylim(0,100)
-SCHOTAB_mort
-```
-
-    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : span too small.  fewer data values than degrees of freedom.
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : pseudoinverse used at 20231
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : neighborhood radius 39.4
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : reciprocal condition number 0
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : There are other near singularities as well. 1714
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : span too small.  fewer data values than degrees of freedom.
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : pseudoinverse used at 20231
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : neighborhood radius 39.4
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : reciprocal condition number 0
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : There are other near singularities as well. 1714
-
-    ## Warning: Removed 27 rows containing missing values or values outside the scale range
-    ## (`geom_smooth()`).
-
-![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-14-7.png)<!-- -->
+|           |
+|:----------|
+| BIRD DATA |
 
 Bird Data Management
 
@@ -750,11 +994,11 @@ bird_data <- bird_data %>%
 goose plot
 
 ``` r
-# Step 1: Create a dataset of only Canada Goose data
+#Create a dataset of only Canada Goose data
 goose_data <- bird_data %>%
   filter(Species == "Canada Goose")
 
-# Step 2: Fit the smoother manually (uses the same loess method as geom_smooth())
+#Fit the smoother manually (uses the same loess method as geom_smooth())
 loess_model <- loess(total ~ as.numeric(Date), data = goose_data)
 ```
 
@@ -774,21 +1018,24 @@ loess_model <- loess(total ~ as.numeric(Date), data = goose_data)
     ## : There are other near singularities as well. 699.07
 
 ``` r
-# Step 3: Create smooth prediction data
-smooth_df <- data.frame(Date = seq(min(goose_data$Date), max(goose_data$Date), length.out = 200)) %>%
-  mutate(
-    total = predict(loess_model, newdata = data.frame(Date = as.numeric(Date)))
-  )
+#Create smooth prediction data
+smooth_df <- data.frame(Date = seq(min(goose_data$Date), 
+                                   max(goose_data$Date), 
+                                   length.out = 200)) %>%
+  mutate(total = predict(loess_model, 
+                         newdata = data.frame(Date = as.numeric(Date))))
 
-# Step 4: Plot with shaded area
+
 goose_plot <- ggplot(goose_data, aes(x = Date, y = total)) +
   geom_point() +
-  geom_smooth(se = FALSE, color = "blue") +  # Trendline
+  geom_smooth(se = FALSE, color = "blue") + 
   geom_ribbon(data = smooth_df, aes(x = Date, ymin = 0, ymax = total),
               inherit.aes = FALSE, fill = "lightblue", alpha = 0.4) +
   ylim(0, 100) +
-  theme_minimal()
-
+  theme_classic() +
+  labs(y = "Number of Canada Geese Observed",
+       title = "Canada Goose Abundance Over Time") +
+  theme(plot.title = element_text(hjust = 0.5))
 goose_plot
 ```
 
@@ -810,3 +1057,24 @@ goose_plot
     ## : There are other near singularities as well. 699.07
 
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+``` r
+ggsave("Figures\\CAGO_abundance_plot.jpg", plot = goose_plot, width = 8, height = 5)
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : span too small.  fewer data values than degrees of freedom.
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20195
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 62.44
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 0
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : There are other near singularities as well. 699.07
