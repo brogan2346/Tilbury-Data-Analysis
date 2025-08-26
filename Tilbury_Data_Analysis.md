@@ -117,22 +117,21 @@ willow_growth_cluster <- willow_data %>%
   ggplot(aes(x=Cluster.., y=Shoot.Growth.Average.Length..cm.)) +
   geom_point(aes(color = factor(Date))) +
   geom_smooth(aes(group = Date, color = factor(Date)), se = FALSE) +
+  theme_classic(base_size = 16) +
   scale_color_manual(values = date_color_palette,
                      breaks = setdiff(names(date_color_palette),
                                   as.character(c("2025-04-17", "2025-04-04")))) +
   labs(color = "Date", x = "Distance From Shore (m)", 
-       y = "Max Shoot Growth (cm)",
-       title = "Willow Stake Growth vs. Distance from Shore") +
-  theme_classic() +
+       y = "Max Shoot Growth (cm)") +
   theme(plot.title = element_text(hjust = 0.5), 
-        legend.position = c(0.89, 0.75)) +
+        legend.position = c(0.85, 0.75)) +
   geom_point(aes(y = Elevation * 100),color = "red") +
   geom_line(aes(y = Elevation * 100),color = "red")+
   scale_y_continuous(
     name = "Shoot Height (cm)",
     sec.axis = sec_axis(~ . / 100, name = "Elevation (m)")) +
     annotate("point", x = 2, y = 100, color = "red", size = 2) +
-    annotate("text", x = 2.5, y = 100, label = "Elevation", hjust = 0, size = 4)
+    annotate("text", x = 2.5, y = 100, label = "Elevation", hjust = 0, size = 5)
 ```
 
     ## Warning: A numeric `legend.position` argument in `theme()` was deprecated in ggplot2
@@ -199,13 +198,13 @@ mort_elevation <- diameter_data %>%
   ggplot(aes(x = Elevation, y = alive_binary)) +
   geom_point()+
   stat_smooth(method = "glm", se = FALSE, color = "red") +
-  theme_classic() +
+  theme_classic(base_size = 25) +
   scale_y_continuous(
     labels = function(x) x * 100) +
   labs(x = "Elevation (m)",
-       y = "Willow Stake Survivorship (%)",
-       title = "Willow Stake Survivorship vs. Elevation") +
-  theme(plot.title = element_text(hjust = 0.5))
+       y = "Probability of \nSurvivorship (%)",
+       title = "(a)") +
+  theme(plot.title = element_text(hjust = -0.15))
 mort_elevation
 ```
 
@@ -218,13 +217,13 @@ mort_diameter <- diameter_data %>%
   ggplot(aes(x = diameter_cm, y = alive_binary)) +
   geom_point()+
   stat_smooth(method = "glm", se = FALSE, color = "red") +
-  theme_classic() +
+  theme_classic(base_size = 25) +
   scale_y_continuous(
     labels = function(x) x * 100) +
   labs(x = "Willow Stake Diameter (cm)",
-       y = "Willow Stake Survivorship (%)",
-       title = "Willow Stake Survivorship vs. Stem Width") +
-  theme(plot.title = element_text(hjust = 0.5))
+       y = "Probability of \nSurvivorship (%)",
+       title = "(b)") +
+  theme(plot.title = element_text(hjust = -0.15))
 mort_diameter
 ```
 
@@ -330,16 +329,12 @@ TEV_plot <- TEV_ave %>%
   ylim(-10,10) +
   geom_errorbar(aes(ymin = ave_diff - sd_diff, ymax = ave_diff + sd_diff),
                 width = 0.2) +
-  labs(y = "Spikerush Height Difference (cm)",
-       title = expression("Common Spikerush (" 
-                          * italic("Eleocharis palustris") *
-                          ") Growth Difference over Time ")) +
+  theme_classic(base_size = 16) +
+  labs(y = "Spikerush Height Difference (cm)") +
   annotate("text", x = as.Date("2025-06-10"), y = 0.75, 
            label = "Increased growth inside exclosure zone ⮝", size = 3, color ="blue") +
   annotate("text", x = as.Date("2025-06-10"), y = -0.5, 
-           label = "Increased growth outside exclosure zone ⮟", size = 3, color = "red") +
-  theme_classic() +
-  theme(plot.title = element_text(hjust = 0.5))
+           label = "Increased growth outside exclosure zone ⮟", size = 3, color = "red")
 TEV_plot
 ```
 
@@ -403,7 +398,7 @@ survivor_plot <- nursery_data %>%
   ggplot(aes(x = Date, y = survivorship, color = TreatmentGroup)) +
   geom_point() +
   geom_jitter(width = 1, height = 2) +
-  theme_classic() +
+  theme_classic(base_size = 16) +
   geom_smooth(se = FALSE) +
   scale_color_manual(values = c(
       "Yes.High" = "red",  
@@ -416,10 +411,10 @@ survivor_plot <- nursery_data %>%
       "No.High" = "Unprotected + High Density",
       "No.Low" = "Unprotected + Low Density")) +
   labs(y = "Nursery Plant SUrvivorship (%)",
-       color = "Treatment",
-       title= "Nursery Plant Survivorship Over Time") +
+       color = "Treatment") +
   theme(plot.title = element_text(hjust = 0.5), 
-        legend.position = c(0.155, 0.2))
+        legend.position = c(0.2, 0.2)) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b")
 survivor_plot
 ```
 
@@ -469,16 +464,16 @@ height_ave_plot <- nursery_ave %>%
   geom_point(aes(color = "yes_val")) +
   geom_point(aes(y = no_val, color = "no_val")) +
   coord_cartesian(ylim = c(0, 25)) +
+  theme_classic(base_size = 16) +
   geom_smooth(aes(y = yes_val), color = "red", se = FALSE) +
   geom_smooth(aes(y = no_val), color = "blue", se = FALSE) + 
   scale_color_manual(values = c("yes_val" = "red", "no_val" = "blue"),
                      labels = c("yes_val" = "Exclosed", "no_val" = "Unprotected")) +
-  labs(color = "Treatment", y = "Average Plant Height (cm)",
-       title = "Nursery Plant Growth over Time ") +
+  labs(color = "Treatment", y = "Average Plant Height (cm)") +
   guides(color = guide_legend(reverse = TRUE)) +
-  theme_classic() +
   theme(plot.title = element_text(hjust = 0.5), 
-        legend.position = c(0.89, 0.85))
+        legend.position = c(0.89, 0.85)) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b")
 height_ave_plot
 ```
 
@@ -620,22 +615,21 @@ Donor Plug data visualization
 ``` r
 donor_height_plot <- donor_long %>%
   mutate(Species = case_when(
-           grepl("CARELYN", Species) ~ "Lyngbyei Sedge",
+           grepl("CARELYN", Species) ~ "Lyngbye's Sedge",
            grepl("ELEOPAL", Species) ~ "Common Spikerush",
-           grepl("SCHOTAB", Species) ~ "Soft-Stem Bull Rush")) %>%
+           grepl("SCHOTAB", Species) ~ "Soft Stem Bulrush")) %>%
   
   
   ggplot(aes(x = Date, y = Height_cm, color = Exclosure)) +
   geom_point() +
   geom_smooth(se = FALSE) +
   facet_wrap(~ Species, ncol = 3) +
+  theme_classic(base_size = 16) +
   scale_color_manual(
     name = "Treatment Group",
     values = c("Yes" = "black", "No" = "darkgrey"),
     labels = c("Yes" = "Exclosed", "No" = "Unprotected")) +
-  theme_classic() +
-  labs(y = "Max Plant Height (cm)",
-       title = "Donor Core Plant Growth by Species") +
+  labs(y = "Max Plant Height (cm)") +
   theme(plot.title = element_text(hjust = 0.5),
         legend.position = "bottom") +
   scale_x_date(date_breaks = "1 month", date_labels = "%b")
@@ -703,22 +697,21 @@ donor_height_plot
 ``` r
 donor_mort_plot <- donor_ave %>%
   mutate(Species = case_when(
-           grepl("CARELYN", Species) ~ "Lyngbyei Sedge",
+           grepl("CARELYN", Species) ~ "Lyngbye's Sedge",
            grepl("ELEOPAL", Species) ~ "Common Spikerush",
-           grepl("SCHOTAB", Species) ~ "Soft-Stem Bull Rush")) %>%
+           grepl("SCHOTAB", Species) ~ "Soft Stem Bulrush")) %>%
   
   
   ggplot(aes(x = Date, y = Survivorship, color = Exclosure)) +
   geom_point() +
   geom_smooth(se = FALSE) +
   facet_wrap(~ Species, ncol = 3) +
+  theme_classic(base_size = 16) +
   scale_color_manual(
     name = "Treatment Group",
     values = c("Yes" = "black", "No" = "darkgrey"),
     labels = c("Yes" = "Exclosed", "No" = "Unprotected")) +
-  theme_classic() +
-  labs(y = "Plant Survivorship (%)",
-       title = "Donor Core Survivorship by Species") +
+  labs(y = "Plant Survivorship (%)") +
   theme(plot.title = element_text(hjust = 0.5),
         legend.position = "bottom") +
   scale_x_date(date_breaks = "1 month", date_labels = "%b")
@@ -1000,24 +993,7 @@ goose_data <- bird_data %>%
 
 #Fit the smoother manually (uses the same loess method as geom_smooth())
 loess_model <- loess(total ~ as.numeric(Date), data = goose_data)
-```
 
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : span too small.  fewer data values than degrees of freedom.
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : pseudoinverse used at 20195
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : neighborhood radius 62.44
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : reciprocal condition number 0
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : There are other near singularities as well. 699.07
-
-``` r
 #Create smooth prediction data
 smooth_df <- data.frame(Date = seq(min(goose_data$Date), 
                                    max(goose_data$Date), 
@@ -1032,29 +1008,13 @@ goose_plot <- ggplot(goose_data, aes(x = Date, y = total)) +
   geom_ribbon(data = smooth_df, aes(x = Date, ymin = 0, ymax = total),
               inherit.aes = FALSE, fill = "lightblue", alpha = 0.4) +
   ylim(0, 100) +
-  theme_classic() +
-  labs(y = "Number of Canada Geese Observed",
-       title = "Canada Goose Abundance Over Time") +
+  theme_classic(base_size = 16) +
+  labs(y = "Number of Canada Geese Observed") +
   theme(plot.title = element_text(hjust = 0.5))
 goose_plot
 ```
 
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : span too small.  fewer data values than degrees of freedom.
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : pseudoinverse used at 20195
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : neighborhood radius 62.44
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : reciprocal condition number 0
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : There are other near singularities as well. 699.07
 
 ![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
@@ -1063,18 +1023,3 @@ ggsave("Figures\\CAGO_abundance_plot.jpg", plot = goose_plot, width = 8, height 
 ```
 
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : span too small.  fewer data values than degrees of freedom.
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : pseudoinverse used at 20195
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : neighborhood radius 62.44
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : reciprocal condition number 0
-
-    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
-    ## : There are other near singularities as well. 699.07
