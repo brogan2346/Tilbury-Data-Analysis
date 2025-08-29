@@ -114,7 +114,7 @@ Growth vs elevation and date plot
 
 ``` r
 willow_growth_cluster <- willow_data %>%
-  ggplot(aes(x=Cluster.., y=Shoot.Growth.Average.Length..cm.)) +
+  ggplot(aes(x=(Cluster..*5-5), y=Shoot.Growth.Average.Length..cm.)) +
   geom_point(aes(color = factor(Date))) +
   geom_smooth(aes(group = Date, color = factor(Date)), se = FALSE) +
   theme_classic(base_size = 16) +
@@ -1023,3 +1023,137 @@ ggsave("Figures\\CAGO_abundance_plot.jpg", plot = goose_plot, width = 8, height 
 ```
 
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+|         |
+|:--------|
+| OVERLAY |
+
+Nursery Plug Goose Overlay
+
+``` r
+#Create a dataset of only Canada Goose data
+goose_data <- bird_data %>%
+  filter(Species == "Canada Goose")
+
+#Fit the smoother manually (uses the same loess method as geom_smooth())
+loess_model <- loess(total ~ as.numeric(Date), data = goose_data)
+
+#Create smooth prediction data
+smooth_df <- data.frame(Date = seq(min(goose_data$Date), 
+                                   max(goose_data$Date), 
+                                   length.out = 200)) %>%
+  mutate(total = predict(loess_model, 
+                         newdata = data.frame(Date = as.numeric(Date))))
+
+survivor_goose_plot <- nursery_data %>%
+  ggplot(aes(x = Date, y = survivorship, color = TreatmentGroup)) +
+  geom_ribbon(data = smooth_df, aes(x = Date, ymin = 0, ymax = total),
+              inherit.aes = FALSE, fill = "green", alpha = 0.1) +
+  geom_smooth(data = goose_data, aes (y = total, x = Date), se = FALSE, color = "green") +
+  geom_point() +
+  geom_jitter(width = 1, height = 2) +
+  theme_classic(base_size = 16) +
+  geom_smooth(se = FALSE) +
+  scale_color_manual(values = c(
+      "Yes.High" = "red",  
+      "Yes.Low" = "pink",
+      "No.High" = "blue",
+      "No.Low" = "lightblue"),
+    labels = c(
+      "Yes.High" = "Exclosed + High Density",
+      "Yes.Low" = "Exclosed + Low Density",
+      "No.High" = "Unprotected + High Density",
+      "No.Low" = "Unprotected + Low Density")) +
+  labs(y = "Nursery Plant SUrvivorship (%)",
+       color = "Treatment") +
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position = c(0.5, 0.25),
+        legend.background = element_rect(fill = "transparent", colour = NA),
+        legend.box.background = element_rect(fill = "transparent", colour = NA)) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b")
+  survivor_goose_plot
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 4.9396e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 3.4928e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 4.9396e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 3.4928e-17
+
+![](Tilbury_Data_Analysis_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+``` r
+ggsave("Figures\\CAGO_Planting_plot.jpg", plot = survivor_goose_plot, width = 8, height = 5)
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 4.9396e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 3.4928e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 4.9396e-17
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : pseudoinverse used at 20257
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : neighborhood radius 26
+
+    ## Warning in simpleLoess(y, x, w, span, degree = degree, parametric = parametric,
+    ## : reciprocal condition number 3.4928e-17
